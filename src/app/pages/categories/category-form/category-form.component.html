@@ -1,25 +1,13 @@
-<nav class="mb-5">
-  <ol class="breadcrumb">
-    <li class="breadcrumb-item"><a routerLink="/">Home</a></li>
-    <li class="breadcrumb-item"><a routerLink="/categories">Categorias</a></li>
-    <li class="breadcrumb-item active">{{pageTitle}}</li>
-  </ol>
-</nav>
+<app-bread-crumb [items]="[{ link: '/categories', text: 'Categorias' },{ text:pageTitle }]"></app-bread-crumb>
 
-<main class="row mb-4">
-  <div class="col-md">
-    <h1 class="h2 border-left pl-2">
-      {{pageTitle}}
-    </h1>
-  </div>
-  <div class="col-md">
-    <a routerLink="/categories" class="btn btn-light float-right">
-      <i class="pi pi-arrow-circle-left"></i> Voltar
-    </a>
-  </div>
-</main>
+<app-page-header
+  [page-title]="pageTitle"
+  [button-class]="'btn-light'"
+  [button-text]="'Voltar'"
+  [button-link]="'/categories'" >
+</app-page-header>
 
-<form [formGroup]="categoryForm" (ngSubmit)="submitForm()">
+<form [formGroup]="resourceForm" (ngSubmit)="submitForm()">
   <div class="card">
     <div class="card-header">
       Informações sobre a Categoria
@@ -30,11 +18,7 @@
         <div class="form-group col-md-4">
           <label for="name">Nome</label>
           <input type="text" class="form-control" id="name" formControlName="name">
-
-          <div class="text-danger" *ngIf="categoryForm.get('name').invalid && categoryForm.get('name').touched">
-            <div *ngIf="categoryForm.get('name').errors.required">Campo obrigatório.</div>
-            <div *ngIf="categoryForm.get('name').errors.minlength">Campo deve ter no mínimo 2 caracteres.</div>
-          </div>
+          <app-form-field-error [form-control]="resourceForm.get('name')"></app-form-field-error>
         </div>
 
         <div class="form-group col-md-8">
@@ -45,14 +29,9 @@
     </div>
   </div>
 
-  <div class="alert alert-danger mt-3" *ngIf="serverErrorMessages">
-    <strong>Erro no servidor: </strong>
-    <ul>
-      <li *ngFor="let item of serverErrorMessages">{{item}}</li>
-    </ul>
-  </div>
+  <app-server-error-messages [serverErrorMessages]="serverErrorMessages"></app-server-error-messages>
 
-  <button [disabled]="submittingForm || categoryForm.invalid" type="submit"
+  <button [disabled]="submittingForm || resourceForm.invalid" type="submit"
     class="btn btn-primary btn-lg float-right mt-3">
     Salvar
   </button>

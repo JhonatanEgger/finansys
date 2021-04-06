@@ -1,26 +1,18 @@
 import { Category } from './../../categories/shared/category.model';
 import { Entry } from './../shared/entry.model';
-import { Component, OnInit, AfterContentChecked } from '@angular/core';
-import { FormGroup, FormBuilder, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
-import { switchMap } from 'rxjs/operators';
-import toastr from 'toastr';
+import { Component, Injector, OnInit } from '@angular/core';
+import { Validators } from '@angular/forms';
 import { EntryService } from '../shared/entry.service';
 import { CategoryService } from '../../categories/shared/category.service';
+import { BaseResourceFormComponent } from 'src/app/shared/components/base-resource-form/base-resource-form.component';
 
 @Component({
   selector: 'app-entry-form',
   templateUrl: './entry-form.component.html',
   styleUrls: ['./entry-form.component.sass']
 })
-export class EntryFormComponent implements OnInit, AfterContentChecked {
+export class EntryFormComponent extends BaseResourceFormComponent<Entry> implements OnInit {
 
-  currentAction: string;
-  entryForm: FormGroup;
-  pageTitle: string;
-  serverErrorMessages: string[] = null;
-  submittingForm = false;
-  entry: Entry = new Entry();
   categories: Category[];
 
   imaskConfig = {
@@ -48,35 +40,19 @@ export class EntryFormComponent implements OnInit, AfterContentChecked {
 
 
   constructor(
-    private entryService: EntryService,
-    private categoryService: CategoryService,
-    private route: ActivatedRoute,
-    private router: Router,
-    private formBuilder: FormBuilder) { }
+    protected entryService: EntryService,
+    protected categoryService: CategoryService,
+    protected injector: Injector) {
+    super(injector, new Entry(), entryService, Entry.fromJson);
+  }
 
   ngOnInit() {
-    this.setCurrentAction();
-    this.buildEntryForm();
-    this.loadEntry();
     this.loadCategories();
+    super.ngOnInit();
   }
 
   loadCategories() {
     this.categoryService.getAll().subscribe(categories => this.categories = categories);
-  }
-
-  ngAfterContentChecked() {
-    this.setPageTitle();
-  }
-
-  submitForm() {
-    this.submittingForm = true;
-
-    if (this.currentAction === 'new') {
-      this.createEntry();
-    } else {
-      this.updateEntry();
-    }
   }
 
   get typeOptions(): Array<any> {
@@ -85,61 +61,8 @@ export class EntryFormComponent implements OnInit, AfterContentChecked {
     });
   }
 
-  updateEntry() {
-    const entry: Entry = Object.assign(new Entry(), this.entryForm.value);
-    this.entryService.update(entry).subscribe(
-      entryResp => this.actionsForSuccess(entryResp),
-      errorResp => this.actionsForError(errorResp));
-  }
-
-  createEntry() {
-    const entry: Entry = Object.assign(new Entry(), this.entryForm.value);
-    this.entryService.create(entry).subscribe(
-      entryResp => this.actionsForSuccess(entryResp),
-      errorResp => this.actionsForError(errorResp));
-  }
-
-  actionsForError(error) {
-    toastr.error('Ocorreu um erro ao processar a sua solicitação.');
-    this.submittingForm = false;
-    if (error.status === 422) {
-      this.serverErrorMessages = JSON.parse(error._body).errors;
-    } else {
-      this.serverErrorMessages = ['Falha na comunicação com o servidor, por favor tente novamente mais tarde.'];
-    }
-  }
-
-  actionsForSuccess(entry: Entry) {
-    toastr.success('Solicitação processada com sucesso!');
-    this.router.navigateByUrl('entries', { skipLocationChange: true }).then(
-      () => this.router.navigate(['entries', entry.id, 'edit'])
-    );
-  }
-
-  private setPageTitle() {
-    if (this.currentAction === 'new') {
-      this.pageTitle = 'Cadastro de nova lançamento';
-    } else {
-      const entryName = this.entry.name || '';
-      this.pageTitle = `Editando Lançamento: ${entryName}`;
-    }
-  }
-
-  private loadEntry() {
-    if (this.currentAction === 'edit') {
-      this.route.paramMap.pipe(
-        switchMap(params => this.entryService.getById(+params.get('id')))
-      ).subscribe((entry) => {
-        this.entry = entry;
-        this.entryForm.patchValue(this.entry);
-      }, (erro) => {
-        alert('Ocorreu um erro no servidor, tente mais tarde');
-      });
-    }
-  }
-
-  private buildEntryForm() {
-    this.entryForm = this.formBuilder.group({
+  protected buildResourceForm() {
+    this.resourceForm = this.formBuilder.group({
       id: [null],
       name: [null, [Validators.required, Validators.minLength(2)]],
       description: [null],
@@ -151,12 +74,11 @@ export class EntryFormComponent implements OnInit, AfterContentChecked {
     });
   }
 
-  private setCurrentAction() {
-    if (this.route.snapshot.url[0].path === 'new') {
-      this.currentAction = 'new';
-    } else {
-      this.currentAction = 'edit';
-    }
+  protected creationPageTitle() {
+    return 'Criação de novo lançamento';
   }
 
+  protected editionTitle() {
+    return 'Edição de Lançamento: ' + (this.resource.name || '');
+  }
 }

@@ -1,32 +1,16 @@
-import { Component, OnInit } from '@angular/core';
+import { BaseResourceListComponent } from './../../../shared/components/base-resource-list/base-resource-list.component';
+import { Component } from '@angular/core';
 import { CategoryService } from '../shared/category.service';
 import { Category } from '../shared/category.model';
-import { element } from 'protractor';
 
 @Component({
   selector: 'app-category-list',
   templateUrl: './category-list.component.html',
   styleUrls: ['./category-list.component.sass']
 })
-export class CategoryListComponent implements OnInit {
-  categories: Category[] = [];
-
-  constructor(private categoryService: CategoryService) { }
-
-  ngOnInit() {
-    this.categoryService.getAll().subscribe(
-      categories => this.categories = categories,
-      error => alert(`Erro ao carregar a lista: ${error}`)
-    );
+export class CategoryListComponent extends BaseResourceListComponent<Category> {
+  breadCrumbItems = [{ text: 'Categorias', link: '/categories' }];
+  constructor(protected categoryService: CategoryService) {
+    super(categoryService);
   }
-
-  deleteCategory(id: number) {
-    const mustDelete = confirm('Deseja realmente excluir este item? ');
-    if (mustDelete) {
-      this.categoryService.delete(id).subscribe(
-        () => this.categories = this.categories.filter(category => category.id !== id),
-        () => alert('Erro ao tentar excluir'));
-    }
-  }
-
 }
